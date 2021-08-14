@@ -5,59 +5,65 @@ import sqlite3
 
 
 def start():
-    # for file_name in ('broker-report-2020-03-01-2020-12-31.xlsx', 'broker-report-2021-01-01-2021-08-07.xlsx')
-    # file_name = input('So?^:')
     id_counter = 1
     all_deal = []
-
-    fh = 'broker-report-2020-03-01-2020-12-31.xlsx'
-    id_counter, all_deal = parsing_xlsx(fh, id_counter, all_deal)
-    print('file added and next deal number is:', id_counter)
-    print()
-    print()
-    fh = 'broker-report-2021-01-01-2021-08-07.xlsx'
-    id_counter, all_deal = parsing_xlsx(fh, id_counter, all_deal)
-    print('file added and next deal number is:', id_counter)
-
+    file_pool = ['broker-report-2020-03-01-2020-12-31.xlsx',
+                 'broker-report-2021-01-01-2021-08-07.xlsx']
+    for fh in file_pool:
+        id_counter, all_deal = parsing_xlsx(fh, id_counter, all_deal)
+        print(f'==> File {fh} added and next deal number is:', id_counter)
+        print()
+        print()
     print(f'Начинаю запись в базу. Всего сделок {len(all_deal)}')
     insert2sql(all_deal)
-    print('base added - finish... Last deal is:', id_counter - 1)
+    print('All deals in DB added. Last deal number is:', id_counter - 1)
 
 
 def parsing_xlsx(fh, id_counter, all_deal):
     wb = openxlsx.load_workbook(filename=fh)
     wb.active = 0
     print(wb)
-    counter = 1
+    cell_counter = 1
 
-    while str(wb.active[f'A{counter}'].value).startswith('1.2 Информация о неисполненных сделках') is not True:
-        print(f'==> в ячейке A{counter}:', str(wb.active[f'A{counter}'].value))
-        if str(wb.active[f'A{counter}'].value).isdigit() is True:
+    while str(wb.active[f'A{cell_counter}'].value).startswith('1.2 Информация о неисполненных сделках') is not True:
+        print(f'==> в ячейке A{cell_counter}:', str(wb.active[f'A{cell_counter}'].value))
+        if str(wb.active[f'A{cell_counter}'].value).isdigit() is True:
             id_num = id_counter
-            num_deals = int(wb.active[f'A{counter}'].value)
-            num_command = int(wb.active[f'E{counter}'].value)
-            _date = str(wb.active[f'H{counter}'].value)
-            _time = str(wb.active[f'K{counter}'].value)
+            num_deals = int(wb.active[f'A{cell_counter}'].value)
+            num_command = int(wb.active[f'E{cell_counter}'].value)
+            _date = str(wb.active[f'H{cell_counter}'].value)
+            _time = str(wb.active[f'K{cell_counter}'].value)
             dt = str(_date + ' ' + _time)
-            stock_name = str(wb.active[f'Q{counter}'].value)
-            deal_type = str(wb.active[f'AA{counter}'].value)
-            full_name = str(wb.active[f'AE{counter}'].value)
-            ticker = str(wb.active[f'AM{counter}'].value)
-            price = str(wb.active[f'AR{counter}'].value).replace(',', '.')
-            currency = str(wb.active[f'AV{counter}'].value)
-            quantity = int(wb.active[f'BA{counter}'].value)
-            amount = str(wb.active[f'BP{counter}'].value).replace(',', '.')
-            brokerage = str(wb.active[f'CA{counter}'].value).replace(',', '.')
-            all_deal.append((id_num, num_deals, num_command, dt, stock_name, deal_type, full_name, ticker, price, currency, quantity, amount, brokerage))
+            stock_name = str(wb.active[f'Q{cell_counter}'].value)
+            deal_type = str(wb.active[f'AA{cell_counter}'].value)
+            full_name = str(wb.active[f'AE{cell_counter}'].value)
+            ticker = str(wb.active[f'AM{cell_counter}'].value)
+            price = str(wb.active[f'AR{cell_counter}'].value).replace(',', '.')
+            currency = str(wb.active[f'AV{cell_counter}'].value)
+            quantity = int(wb.active[f'BA{cell_counter}'].value)
+            amount = str(wb.active[f'BP{cell_counter}'].value).replace(',', '.')
+            brokerage = str(wb.active[f'CA{cell_counter}'].value).replace(',', '.')
+            all_deal.append((id_num, num_deals, num_command, dt, stock_name, deal_type, full_name,
+                             ticker, price, currency, quantity, amount, brokerage))
             print(id_num, price, ticker)
 
             id_counter += 1
-            # print(all_deal)
             # all_deal.clear()
         else:
             print('==> не найден номер сделки, ищу дальше')
-        counter += 1
+        cell_counter += 1
     return id_counter, all_deal
+
+
+def check_deal(num_deals, deal_row):
+    conn = sqlite3.connect("tinkoffdata.db")
+    cursor = conn.cursor()
+    # check_sql = "SELECT NumDeals FROM operations"
+    cursor.execute("SELECT NumDeals FROM operations")
+    if cursor.fetchone():
+        insert2sql(deal_row)
+    else:
+        print(f'Сделка с {num_deals} номером уже есть.')
 
 
 def insert2sql(deals):
