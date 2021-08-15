@@ -11,10 +11,10 @@ def start():
                  'broker-report-2021-01-01-2021-08-07.xlsx']
     for fh in file_pool:
         id_counter, db_count = parsing_xlsx(fh, id_counter, db_count)
-        print(f'==> File {fh} added and last deal number is:', id_counter - 1)
+        print(f'==> Сделки из {fh} внесены в базу данных (только новые).')
         print()
         print()
-    print('All deals in DB added. Last deal number is:', db_count)
+    print('Все данные занесены в БД. Всего обработано:', db_count)
 
 
 def parsing_xlsx(fh, id_counter, db_count):
@@ -42,19 +42,15 @@ def parsing_xlsx(fh, id_counter, db_count):
             quantity = int(wb.active[f'BA{cell_counter}'].value)
             amount = str(wb.active[f'BP{cell_counter}'].value).replace(',', '.')
             brokerage = str(wb.active[f'CA{cell_counter}'].value).replace(',', '.')
-            # all_deal.append((id_num, num_deal, num_command, dt, stock_name, deal_type, full_name,
-            #                  ticker, price, currency, quantity, amount, brokerage))
 
             deal_row.append((id_num, num_deal, num_command, dt, stock_name, deal_type, full_name,
                              ticker, price, currency, quantity, amount, brokerage))
-
-            print('пошел проверять в базу')
+            print('>> Проверяем на дублирование в базе')
             db_count = check_deal(num_deal, deal_row, db_count)
-            # print('отправляю на запись в базу')
             id_counter += 1
             deal_row.clear()
         else:
-            print('==> не найден номер сделки, ищу дальше')
+            print(f'---- Данные из XLSX не найден в ячейке A{cell_counter}')
         cell_counter += 1
     return id_counter, db_count
 
@@ -63,10 +59,10 @@ def check_deal(num_deal, deal_row, db_count):
     conn = sqlite3.connect("tinkoffdata.db")
     cursor = conn.cursor()
     if num_deal in cursor.execute("SELECT NumDeals FROM operations"):
-        print(f'Опс! Есть сделка с номером: {num_deal}')
+        print(f'---- Уже есть сделка с номером: {num_deal}')
     else:
         db_count = insert2sql(deal_row, db_count)
-        print(f'Добавил сделку {num_deal} в базу.')
+        print(f'>>>> Добавлена сделка {num_deal} в базу данных.')
     print('==============')
     return db_count
 
