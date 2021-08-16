@@ -4,6 +4,7 @@
 # from datetime import datetime
 # import re
 import sqlite3
+import exporter as out
 
 
 # TODO достать из базы
@@ -29,6 +30,7 @@ def get_from_db():
     print('==> Все полученные данные из БД обработаны.')
     print(ArrayFull)
     show()
+    out.save2xlsx(ArrayFull)
 
 
 def show():
