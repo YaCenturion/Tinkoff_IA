@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # import datetime as dtc
 # from datetime import datetime
 # import re
@@ -5,7 +7,6 @@ import sqlite3
 
 
 # TODO достать из базы
-# сотояние по тикиру (баланс)
 # если в скольки процентах сделок прибегал к усреднению
 # если усреднял то сколько раз пока не вышел из бумаги
 #
@@ -17,14 +18,12 @@ def get_from_db():
     conn = sqlite3.connect("tinkoffdata.db")
     cursor = conn.cursor()
     for value in cursor.execute("SELECT * FROM operations"):
-        if value[4] == 'СПБ' and value[7] == 'AMZN':  # Берем только сделки с акциями на СПБ
+        if value[4] == 'СПБ':  # Берем только сделки с акциями на СПБ
             collect2dict(value)
         else:
             pass
-            # print('================================')
-            # print('Не обработано:')
+            # print(' = = = = = > > > Не обработано:')
             # print(value)
-            # print('================================')
     else:
         print('---- Больше сделок не нашел.')
     print('==> Все полученные данные из БД обработаны.')
@@ -48,29 +47,21 @@ def ticker_update(ticker):
 def collect2dict(value):
     print(value)
     deal_num = value[1]
-    dt = value[3]  # TODO обработать дату-время
-    if value[5] == 'Покупка':
+    # dt = value[3]  # TODO обработать дату-время
+    if value[5] in ['Покупка', 'РЕПО 2 Покупка', 'РЕПО 1 Покупка']:
         price_type = -1
         qty_type = 1
         margin = False
-    elif value[5] == 'Продажа':
+    elif value[5] in ['Продажа', 'РЕПО 1 Продажа', 'РЕПО 2 Продажа']:
         price_type = 1
         qty_type = -1
         margin = False
-    elif value[5] == 'РЕПО 2 Покупка' or 'РЕПО 1 Покупка':
-        price_type = -1
-        qty_type = 1
-        margin = True
-    elif value[5] == 'РЕПО 1 Продажа' or 'РЕПО 2 Продажа':
-        price_type = 1
-        qty_type = -1
-        margin = True
     else:
-        price_type = 1
-        qty_type = 1
+        price_type = None
+        qty_type = None
         margin = False
         print('-------- !!! Обнаружен неизвестный тип сделки', value[5])
-    full_name = value[6]
+    # full_name = value[6]
     ticker = '$' + ticker_update(value[7])
     price = float(value[8]) * price_type
     # currency = value[9]  # Валюта сделки отрицательное значение
@@ -127,7 +118,6 @@ def collect2dict(value):
             ArrayFull[ticker]['Amount']['SummaryBay'] += amount_clear
         else:  # Если продажа аций (+)
             ArrayFull[ticker]['Amount']['SummarySell'] += amount_clear
-    print('Счет:', ArrayFull[ticker]['Amount']['Summary'], '// количество:', ArrayFull[ticker]['Qty']['Summary'])
     return ArrayFull
 
 
