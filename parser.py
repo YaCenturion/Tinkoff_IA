@@ -1,7 +1,7 @@
 # import datetime as dtc
 # from datetime import datetime
-import sqlite3
 # import re
+import sqlite3
 
 
 # TODO достать из базы
@@ -17,13 +17,14 @@ def get_from_db():
     conn = sqlite3.connect("tinkoffdata.db")
     cursor = conn.cursor()
     for value in cursor.execute("SELECT * FROM operations"):
-        if value[4] == 'СПБ':  # Берем только сделки с акциями на СПБ
+        if value[4] == 'СПБ' and value[7] == 'AMZN':  # Берем только сделки с акциями на СПБ
             collect2dict(value)
         else:
-            print('================================')
-            print('Не обработано:')
-            print(value)
-            print('================================')
+            pass
+            # print('================================')
+            # print('Не обработано:')
+            # print(value)
+            # print('================================')
     else:
         print('---- Больше сделок не нашел.')
     print('==> Все полученные данные из БД обработаны.')
@@ -45,6 +46,7 @@ def ticker_update(ticker):
 
 
 def collect2dict(value):
+    print(value)
     deal_num = value[1]
     dt = value[3]  # TODO обработать дату-время
     if value[5] == 'Покупка':
@@ -125,6 +127,7 @@ def collect2dict(value):
             ArrayFull[ticker]['Amount']['SummaryBay'] += amount_clear
         else:  # Если продажа аций (+)
             ArrayFull[ticker]['Amount']['SummarySell'] += amount_clear
+    print('Счет:', ArrayFull[ticker]['Amount']['Summary'], '// количество:', ArrayFull[ticker]['Qty']['Summary'])
     return ArrayFull
 
 
