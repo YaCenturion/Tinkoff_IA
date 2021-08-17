@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # import datetime as dtc
-# from datetime import datetime
+from datetime import datetime
 # import re
 import sqlite3
 import exporter as out
@@ -28,14 +28,7 @@ def get_from_db():
     else:
         print('---- Больше сделок не нашел.')
     print('==> Все полученные данные из БД обработаны.')
-    print(ArrayFull)
-    show()
     out.save2xlsx(ArrayFull)
-
-
-def show():
-    for ticker in ArrayFull:
-        print(ticker, ArrayFull[ticker]['Amount']['Summary'], ArrayFull[ticker]['Qty']['Summary'])
 
 
 def ticker_update(ticker):
@@ -47,23 +40,31 @@ def ticker_update(ticker):
 
 
 def collect2dict(value):
-    print(value)
+    # print(value)
     deal_num = value[1]
-    # dt = value[3]  # TODO обработать дату-время
-    if value[5] in ['Покупка', 'РЕПО 2 Покупка', 'РЕПО 1 Покупка']:
+    deal_dt = datetime.strptime(value[3], "%d.%m.%Y %H:%M:%S")
+    if value[5] in ['Покупка']:
         price_type = -1
         qty_type = 1
         margin = False
-    elif value[5] in ['Продажа', 'РЕПО 1 Продажа', 'РЕПО 2 Продажа']:
+    elif value[5] in ['Продажа']:
         price_type = 1
         qty_type = -1
         margin = False
+    elif value[5] in ['РЕПО 2 Покупка', 'РЕПО 1 Покупка']:
+        price_type = -1
+        qty_type = 1
+        margin = True
+    elif value[5] in ['РЕПО 1 Продажа', 'РЕПО 2 Продажа']:
+        price_type = 1
+        qty_type = -1
+        margin = True
     else:
         price_type = None
         qty_type = None
         margin = False
         print('-------- !!! Обнаружен неизвестный тип сделки', value[5])
-    # full_name = value[6]
+    name = value[6]
     ticker = '$' + ticker_update(value[7])
     price = float(value[8]) * price_type
     # currency = value[9]  # Валюта сделки отрицательное значение
@@ -80,12 +81,19 @@ def collect2dict(value):
         ArrayFull[ticker] = {}
         ArrayFull[ticker]['Amount'] = {}
         ArrayFull[ticker]['Qty'] = {}
+        ArrayFull[ticker]['OnHands'] = {}
+        ArrayFull[ticker]['Name'] = name
+        ArrayFull[ticker]['OnHands']['Amount'] = amount_clear
         ArrayFull[ticker]['Amount']['Summary'] = amount_clear  # Записываем очищенную сумму из сделки
         ArrayFull[ticker]['Qty']['Summary'] = qty * qty_type  # Записываем количесвенный баланс акций из сделки
         if margin is True:
             ArrayFull[ticker]['MarginTimes'] = 1
+
+        ArrayFull[ticker]['OutPosition'] = 0
+
         # TODO Добавить учет времени
-        
+        ArrayFull[ticker]['StartTimer'] = deal_dt
+        ArrayFull[ticker]['StopTimer'] = 0
         # Учет количества
         if qty > 0:
             ArrayFull[ticker]['Qty']['PositiveSummary'] = qty  # Записываем количество купленных акций
@@ -109,11 +117,23 @@ def collect2dict(value):
             ArrayFull[ticker]['MarginTimes'] += 1
         elif margin is True and 'MarginTimes' not in ArrayFull[ticker]:
             ArrayFull[ticker]['MarginTimes'] = 1
+
         # Учет изменений в количестве для акций (вторичный)
         if qty > 0:
             ArrayFull[ticker]['Qty']['PositiveSummary'] += qty  # Добавляем количество купленных акций
         elif qty < 0:
             ArrayFull[ticker]['Qty']['NegativeSummary'] += qty  # Добавляем количество проданных акций
+
+        # Учет текущих акций на руках
+        if ArrayFull[ticker]['Qty']['Summary'] == 0:
+            ArrayFull[ticker]['OutPosition'] += 1
+            ArrayFull[ticker]['OnHands']['Amount'] = 0
+        else:
+            ArrayFull[ticker]['OnHands']['Amount'] += amount_clear
+
+        # TODO Добавить учет времени
+        ArrayFull[ticker]['StartTimer'] = deal_dt
+        ArrayFull[ticker]['StopTimer'] = 0
 
         # Учет суммы сделки
         if amount_clear < 0:  # Если покупка аций (-)
