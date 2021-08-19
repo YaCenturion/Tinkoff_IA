@@ -8,7 +8,8 @@ def start():
     id_counter = 1
     db_count = 0
     file_pool = ['broker-report-2020-03-01-2020-12-31.xlsx',
-                 'broker-report-2021-01-01-2021-08-07.xlsx']
+                 'broker-report-2021-01-01-2021-08-07.xlsx',
+                 'broker-report-2021-08-01-2021-08-18.xlsx']
     for fh in file_pool:
         id_counter, db_count = parsing_xlsx(fh, id_counter, db_count)
         print(f'==> Сделки из {fh} внесены в базу данных (только новые).')
@@ -20,7 +21,6 @@ def start():
 def parsing_xlsx(fh, id_counter, db_count):
     wb = openxlsx.load_workbook(filename=fh)
     wb.active = 0
-    print(wb)
     cell_counter = 1
 
     while str(wb.active[f'A{cell_counter}'].value).startswith('1.2 Информация о неисполненных сделках') is not True:
@@ -70,6 +70,9 @@ def check_deal(num_deal, deal_row, db_count):
 def insert2sql(deals, db_count):
     conn = sqlite3.connect("tinkoffdata.db")
     cursor = conn.cursor()
+
+    # TODO Сделать проверку данных на наличие перед добавлением
+
     cursor.executemany("INSERT INTO operations VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", deals)
     conn.commit()
     conn.close()

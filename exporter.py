@@ -13,7 +13,7 @@ def save2xlsx(data):
     wb['Sheet'].title = 'Tinkoff Report'
     sheet = wb.active
     # Название отчета
-    sheet['A1'] = 'Отчет на основе анализа данных Tinkoff Инвестиции'
+    sheet['B1'] = 'Отчет на основе анализа данных Tinkoff Инвестиции'
     # Шапка таблицы
     sheet['B2'] = 'Название'
     sheet['C2'] = 'Тикер'
