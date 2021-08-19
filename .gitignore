@@ -1,1 +1,3 @@
-!/tinkoffdata.db_
+**/__pycache__
+*.pyc
+/venv/
