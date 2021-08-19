@@ -1,16 +1,21 @@
-ArrayFull = dict()
-ticker = '$MSFT'
-amount_clear = 94.02
-qty = 2
-margin = True
-
-ArrayFull[ticker] = {}
-ArrayFull[ticker]['Amount'] = amount_clear  # Записываем очищенную сумму из сделки
-ArrayFull[ticker]['AmountQty'] = qty * -1
-
-if margin is True:
-    if 'MarginTimes' not in ArrayFull[ticker]:
-        ArrayFull[ticker]['MarginTimes'] = 1
+from datetime import datetime, timedelta
 
 
-print(ArrayFull)
+def delta(start, stop):
+    start = datetime.fromisoformat(str(start))
+    stop = datetime.fromisoformat(str(stop))
+    return stop - start
+
+
+a = datetime.strptime('2020-03-16 10:37:57', "%Y-%m-%d %H:%M:%S")
+x = datetime.now()
+z = delta(a, x)
+
+
+b = datetime.strptime('2021-03-16 10:37:57', "%Y-%m-%d %H:%M:%S")
+y = datetime.now()
+t = delta(a, x)
+
+z += t
+
+print(z)

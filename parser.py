@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# import datetime as dtc
 from datetime import datetime
-# import re
 import sqlite3
 import exporter as out
 
@@ -23,11 +21,12 @@ def get_from_db():
             collect2dict(value)
         else:
             pass
-            # print(' = = = = = > > > Не обработано:')
             # print(value)
     else:
+        print('')
+        print('.......................................................')
         print('---- Больше сделок не нашел.')
-    print('==> Все полученные данные из БД обработаны.')
+    print('---- Все полученные данные из БД обработаны.')
     out.save2xlsx(ArrayFull)
 
 
@@ -37,6 +36,12 @@ def ticker_update(ticker):
     else:
         new_ticker = ticker
     return new_ticker
+
+
+def delta(start, stop):
+    start = datetime.fromisoformat(str(start))
+    stop = datetime.fromisoformat(str(stop))
+    return int((stop - start).days)  # Возвращает время в днях
 
 
 def collect2dict(value):
@@ -73,14 +78,15 @@ def collect2dict(value):
     orig_deal_amount = float(value[11]) * price_type - brokerage
     amount_clear = round(price * qty, 2) - brokerage  # Вычисляем чистую стоимость
     if amount_clear != orig_deal_amount:
-        print(f'======================== Подозрение на ошибку в отчете по сделке #{deal_num} / запись: {value[0]}')
-        print(amount_clear, ' != ', orig_deal_amount)
-    
+        print(f'=====//////// Подозрение на ошибку в отчете по сделке #{deal_num} (запись: {value[0]}) :',
+              amount_clear, ' != ', orig_deal_amount)
+
     # Добавление значений сделки в словарь
     if ticker not in ArrayFull:  # Если ТИКЕР проходит впервые:
         ArrayFull[ticker] = {}
         ArrayFull[ticker]['Amount'] = {}
         ArrayFull[ticker]['Qty'] = {}
+        ArrayFull[ticker]['Time'] = {}
         ArrayFull[ticker]['OnHands'] = {}
         ArrayFull[ticker]['Name'] = name
         ArrayFull[ticker]['OnHands']['Amount'] = amount_clear
@@ -91,15 +97,16 @@ def collect2dict(value):
 
         ArrayFull[ticker]['OutPosition'] = 0
 
-        # TODO Добавить учет времени
-        ArrayFull[ticker]['StartTimer'] = deal_dt
-        ArrayFull[ticker]['StopTimer'] = 0
-        # Учет количества
+        # Учет времени
+        ArrayFull[ticker]['Time']['StartTimer'] = deal_dt
+        ArrayFull[ticker]['Time']['Delta'] = 0
+
+        # Учет количества акций
         if qty > 0:
             ArrayFull[ticker]['Qty']['PositiveSummary'] = qty  # Записываем количество купленных акций
             ArrayFull[ticker]['Qty']['NegativeSummary'] = 0  # Для акций, которые 1-й раз НЕ шортились
         elif qty < 0:
-            ArrayFull[ticker]['Qty']['PositiveSummary'] = 0  # Для акций, которые сразу шортились
+            ArrayFull[ticker]['Qty']['PositiveSummary'] = 0  # Для акций, которые сразу в шорт
             ArrayFull[ticker]['Qty']['NegativeSummary'] = qty  # Записываем количество проданных акций
         
         # Учет суммы сделки
@@ -126,14 +133,16 @@ def collect2dict(value):
 
         # Учет текущих акций на руках
         if ArrayFull[ticker]['Qty']['Summary'] == 0:
+            # Учет времени
+            if ArrayFull[ticker]['Time']['StartTimer'] is not None:
+                ArrayFull[ticker]['Time']['Delta'] += delta(ArrayFull[ticker]['Time']['StartTimer'], deal_dt)
+                ArrayFull[ticker]['Time']['StartTimer'] = None
+            else:
+                ArrayFull[ticker]['StartTimer'] = deal_dt
             ArrayFull[ticker]['OutPosition'] += 1
             ArrayFull[ticker]['OnHands']['Amount'] = 0
         else:
             ArrayFull[ticker]['OnHands']['Amount'] += amount_clear
-
-        # TODO Добавить учет времени
-        ArrayFull[ticker]['StartTimer'] = deal_dt
-        ArrayFull[ticker]['StopTimer'] = 0
 
         # Учет суммы сделки
         if amount_clear < 0:  # Если покупка аций (-)

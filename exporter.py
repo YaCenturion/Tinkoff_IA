@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 
 # import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 from openpyxl import Workbook
 
 
 def save2xlsx(data):
+    print()
+    print('...............................................................')
     print(f'Начинаю писать в report_{datetime.date(datetime.today())}.xlsx')
     wb = Workbook()
     wb['Sheet'].title = 'Tinkoff Report'
@@ -22,7 +24,7 @@ def save2xlsx(data):
     sheet['H2'] = 'Получено'
     sheet['I2'] = 'Доход'
 
-    sheet['J2'] = 'Срок владения'
+    sheet['J2'] = 'Время владения'
     sheet['K2'] = 'Прибыль на акцию'
     sheet['L2'] = 'Эффективность %'
     sheet['M2'] = 'gIndex'
@@ -32,7 +34,8 @@ def save2xlsx(data):
 
     x = 3
     for ticker in data:
-        print(ticker, ' - обработан')
+        delta = 1 if data[ticker]['Time']['Delta'] is None else data[ticker]['Time']['Delta']
+        print(ticker, ' - обработан и записан в XLSX')
         sheet.cell(row=x, column=2).value = data[ticker]['Name']
         sheet.cell(row=x, column=3).value = ticker
         sheet.cell(row=x, column=4).value = data[ticker]['OutPosition']
@@ -51,7 +54,7 @@ def save2xlsx(data):
             sheet.cell(row=x, column=8).value = data[ticker]['Amount']['SummarySell']
             sheet.cell(row=x, column=9).value = data[ticker]['Amount']['Summary']
 
-        sheet.cell(row=x, column=10).value = 'в разработке'  # data[ticker]['DeltaTime']
+        sheet.cell(row=x, column=10).value = delta
         sheet.cell(row=x, column=11).value = round(data[ticker]['Amount']['Summary'] / data[ticker]['Qty']['PositiveSummary'], 2)
         sheet.cell(row=x, column=12).value = 'в разработке'
         sheet.cell(row=x, column=13).value = 'в разработке'
@@ -66,4 +69,6 @@ def save2xlsx(data):
         x += 1
     wb.save(f'report_{datetime.date(datetime.today())}.xlsx')
     wb.close()
+    print()
+    print('......................................................')
     print('Все готово!')
