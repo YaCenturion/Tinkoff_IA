@@ -1,5 +1,5 @@
-# from openpyxl import load_workbook
-# from openpyxl import Workbook
+# -*- coding: utf-8 -*-
+
 import openpyxl.reader.excel as openxlsx
 import sqlite3
 
@@ -70,7 +70,6 @@ def check_deal(num_deal, deal_row, db_count):
 def insert2sql(deals, db_count):
     conn = sqlite3.connect("tinkoffdata.db")
     cursor = conn.cursor()
-    # TODO проверка транзакции на наличие в базе
     cursor.executemany("INSERT INTO operations VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", deals)
     conn.commit()
     conn.close()
